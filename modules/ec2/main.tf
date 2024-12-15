@@ -34,8 +34,11 @@ resource "aws_instance" "main" {
               sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
               sudo systemctl enable amazon-ssm-agent
               sudo systemctl start amazon-ssm-agent
+              sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazoncloudwatch-agent-ap-northeast-1/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
+              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${var.common.env}-cloudwatch-agent -s
               EOF
   iam_instance_profile = aws_iam_instance_profile.main.name
+  depends_on = [aws_ssm_parameter.cloudwatch_agent]
   tags = {
     Name = "${var.common.env}-ec2"
   }
@@ -73,7 +76,8 @@ data "aws_iam_policy_document" "main" {
 resource "aws_iam_role_policy_attachments_exclusive" "main" {
   role_name = aws_iam_role.main.name
   policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+    "arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy"
   ]
 }
 
@@ -98,4 +102,15 @@ resource "local_file" "main" {
   filename = "../../${var.common.env}-private-key.pem"
   content  = tls_private_key.main.private_key_pem
   file_permission = "0600"
+}
+
+########################
+# SSM Parameter Store
+########################
+
+# Define SSM parameter for CloudWatch Agent
+resource "aws_ssm_parameter" "cloudwatch_agent" {
+  name  = "${var.common.env}-cloudwatch-agent"
+  type  = "String"
+  value = file("../../files/cloudwatch_agent.json")
 }
