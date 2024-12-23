@@ -40,7 +40,7 @@ resource "aws_instance" "main" {
   iam_instance_profile = aws_iam_instance_profile.main.name
   depends_on = [aws_ssm_parameter.cloudwatch_agent]
   tags = {
-    Name = "${var.common.env}-ec2"
+    Name = "${var.common.env}-ec2-${each.key}"
   }
 }
 
