@@ -35,7 +35,7 @@ resource "aws_instance" "main" {
               sudo systemctl enable amazon-ssm-agent
               sudo systemctl start amazon-ssm-agent
               sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazoncloudwatch-agent-ap-northeast-1/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
-              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${var.common.env}-cloudwatch-agent -s
+              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${var.common.env}-cloudwatch-agent-${each.key} -s
               EOF
   iam_instance_profile = aws_iam_instance_profile.main.name
   depends_on = [aws_ssm_parameter.cloudwatch_agent]
@@ -110,7 +110,8 @@ resource "local_file" "main" {
 
 # Define SSM parameter for CloudWatch Agent
 resource "aws_ssm_parameter" "cloudwatch_agent" {
-  name  = "${var.common.env}-cloudwatch-agent"
+  for_each = {for i, s in var.network.private_subnet_ids : i => s}
+  name  = "${var.common.env}-cloudwatch-agent-${each.key}"
   type  = "String"
-  value = file("../../files/cloudwatch_agent.json")
+  value = file("../../files/cloudwatch_agent_${each.key}.json")
 }
