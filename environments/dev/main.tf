@@ -25,3 +25,10 @@ module "ec2" {
   common = local.common
   network = module.network
 }
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+  common = local.common
+  target = var.target
+  ec2 = module.ec2
+}
