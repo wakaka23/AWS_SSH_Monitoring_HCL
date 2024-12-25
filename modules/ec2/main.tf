@@ -5,7 +5,7 @@
 # Get AMI for RHEL 9.4
 data "aws_ami" "rhel" {
   most_recent = true
-  owners = ["amazon"]
+  owners      = ["amazon"]
   filter {
     name   = "name"
     values = ["RHEL-9.4.*"]
@@ -14,7 +14,7 @@ data "aws_ami" "rhel" {
 
 # Define EC2 instance
 resource "aws_instance" "main" {
-  for_each = {for i, s in var.network.private_subnet_ids : i => s}
+  for_each               = { for i, s in var.network.private_subnet_ids : i => s }
   ami                    = data.aws_ami.rhel.id
   instance_type          = "t3.large"
   vpc_security_group_ids = [var.network.security_group_for_instance_id]
@@ -28,7 +28,7 @@ resource "aws_instance" "main" {
       Name = "${var.common.env}-ebs"
     }
   }
-  user_data = <<-EOF
+  user_data            = <<-EOF
               #!/bin/bash
               cd /tmp
               sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
@@ -38,7 +38,7 @@ resource "aws_instance" "main" {
               sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${var.common.env}-cloudwatch-agent-${each.key} -s
               EOF
   iam_instance_profile = aws_iam_instance_profile.main.name
-  depends_on = [aws_ssm_parameter.cloudwatch_agent]
+  depends_on           = [aws_ssm_parameter.cloudwatch_agent]
   tags = {
     Name = "${var.common.env}-ec2-${each.key}"
   }
@@ -88,7 +88,7 @@ resource "aws_iam_role_policy_attachments_exclusive" "main" {
 # Define Secret Key and Public Key
 resource "tls_private_key" "main" {
   algorithm = "RSA"
-  rsa_bits = 4096
+  rsa_bits  = 4096
 }
 
 # Define Key Pair on AWS
@@ -99,8 +99,8 @@ resource "aws_key_pair" "main" {
 
 # Save Secret Key to local file
 resource "local_file" "main" {
-  filename = "../../${var.common.env}-private-key.pem"
-  content  = tls_private_key.main.private_key_pem
+  filename        = "../../${var.common.env}-private-key.pem"
+  content         = tls_private_key.main.private_key_pem
   file_permission = "0600"
 }
 
@@ -110,8 +110,10 @@ resource "local_file" "main" {
 
 # Define SSM parameter for CloudWatch Agent
 resource "aws_ssm_parameter" "cloudwatch_agent" {
-  for_each = {for i, s in var.network.private_subnet_ids : i => s}
-  name  = "${var.common.env}-cloudwatch-agent-${each.key}"
-  type  = "String"
-  value = file("../../files/cloudwatch_agent_${each.key}.json")
+  for_each = { for i, s in var.network.private_subnet_ids : i => s }
+  name     = "${var.common.env}-cloudwatch-agent-${each.key}"
+  type     = "String"
+  value = templatefile("../../files/cloudwatch_agent.json", {
+    instance_index = each.key
+  })
 }

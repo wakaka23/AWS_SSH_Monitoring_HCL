@@ -4,14 +4,14 @@
 
 # Define CloudWatch Logs Metric Filter
 resource "aws_cloudwatch_log_metric_filter" "ssh_failures" {
-  for_each    = { for i, s in var.ec2.instance_ids : i => s }
-  name            = "${var.common.env}-metrics-filter-ssh-failures-${each.key}"
-  pattern         = "Failed password for"
-  log_group_name  = "secure-${each.key}"
+  for_each       = { for i, s in var.ec2.instance_ids : i => s }
+  name           = "${var.common.env}-metrics-filter-ssh-failures-${each.key}"
+  pattern        = "[Mon, day, timestamp, ip, id, msg1= Failed, msg2 = password, ...]"
+  log_group_name = "/var/log/secure-${each.key}"
   metric_transformation {
-    name      = "SSH-Failures-${each.key}"
-    namespace = "CWAgent"
-    value     = "1"
+    name          = "SSH-Failures-${each.key}"
+    namespace     = "CWAgent"
+    value         = "1"
     default_value = "0"
   }
 }
@@ -74,9 +74,9 @@ resource "aws_cloudwatch_metric_alarm" "disk_utilization" {
   metric_name = "disk_used_percent"
   dimensions = {
     InstanceId = each.value
-    device = "nvme0n1p4"
-    fstype = "xfs"
-    path = "/"
+    device     = "nvme0n1p4"
+    fstype     = "xfs"
+    path       = "/"
   }
   statistic           = "Average"
   period              = 300
@@ -94,10 +94,10 @@ resource "aws_cloudwatch_metric_alarm" "disk_utilization" {
 
 # Define CloudWatch Alarm for SSH Failures
 resource "aws_cloudwatch_metric_alarm" "ssh_failures" {
-  for_each    = { for i, s in aws_cloudwatch_log_metric_filter.ssh_failures : i => s }
-  alarm_name  = "${var.common.env}-alarm-ssh-failures-${each.key}"
-  namespace   = "CWAgent"
-  metric_name = "SSH-Failures-${each.key}"
+  for_each            = { for i, s in aws_cloudwatch_log_metric_filter.ssh_failures : i => s }
+  alarm_name          = "${var.common.env}-alarm-ssh-failures-${each.key}"
+  namespace           = "CWAgent"
+  metric_name         = "SSH-Failures-${each.key}"
   statistic           = "Sum"
   period              = 60
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -140,7 +140,7 @@ data "aws_iam_policy_document" "sns-topic" {
     effect    = "Allow"
     principals {
       type        = "Service"
-      identifiers = ["events.amazonaws.com","cloudwatch.amazonaws.com"]
+      identifiers = ["events.amazonaws.com", "cloudwatch.amazonaws.com"]
     }
   }
 }
