@@ -14,7 +14,7 @@
 │     └─ (terraform.tfvars)
 │
 ├─ files
-│  └─ cloudwatch_agent_0.json(CloudWatch Agent設定用JSON)
+│  └─ cloudwatch_agent.json(CloudWatch Agent設定用JSON)
 │
 └─ modules
       ├─ ec2(EC2関連のリソース）
