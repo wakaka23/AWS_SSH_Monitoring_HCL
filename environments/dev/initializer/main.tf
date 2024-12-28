@@ -14,4 +14,7 @@ provider "aws" {
 
 module "initializer" {
   source = "../../../modules/initializer"
+  bucket = {
+    bucket_name = var.bucket.bucket_name
+  }
 }

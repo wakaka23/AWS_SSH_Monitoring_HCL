@@ -3,12 +3,6 @@
 ########################
 
 # Define S3 Bucket for tfstate
-variable "bucket" {
-  type = object({
-    bucket_name = string
-  })
-}
-
 resource "aws_s3_bucket" "tfstate" {
   bucket = var.bucket.bucket_name
 }
