@@ -7,7 +7,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket  = "terraform-tfstate-ssh-monitoring"
+    bucket  = var.bucket.bucket_name
     region  = "ap-northeast-1"
     key     = "terraform.tfstate"
     encrypt = true
