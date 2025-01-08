@@ -2,7 +2,7 @@
 # CloudWatch Metrics Filter
 ########################
 
-# Define CloudWatch Logs Metric Filter
+# Define CloudWatch Metric Filter for SSH Failures
 resource "aws_cloudwatch_log_metric_filter" "ssh_failures" {
   for_each       = { for i, s in var.ec2.instance_ids : i => s }
   name           = "${var.common.env}-metrics-filter-ssh-failures-${each.key}"
@@ -10,6 +10,20 @@ resource "aws_cloudwatch_log_metric_filter" "ssh_failures" {
   log_group_name = "/var/log/secure-${each.key}"
   metric_transformation {
     name          = "SSH-Failures-${each.key}"
+    namespace     = "CWAgent"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+# Define CloudWatch Metric Filter for SSH during non-business hours
+resource "aws_cloudwatch_log_metric_filter" "ssh_non_business_hours" {
+  for_each       = { for i, s in var.ec2.instance_ids : i => s }
+  name           = "${var.common.env}-metrics-filter-ssh-during-non-business-hours-${each.key}"
+  pattern        = "[Mon, day, timestamp=%1[2-9]\\:[0-5][0-9]\\:[0-5][0-9]% || timestamp=%2[0-1]\\:[0-5][0-9]\\:[0-5][0-9]%, ip, id, msg1= Accepted, msg2 = publickey, ...]"
+  log_group_name = "/var/log/secure-${each.key}"
+  metric_transformation {
+    name          = "SSH-during-non-business-hours-${each.key}"
     namespace     = "CWAgent"
     value         = "1"
     default_value = "0"
@@ -109,6 +123,26 @@ resource "aws_cloudwatch_metric_alarm" "ssh_failures" {
   alarm_actions       = [aws_sns_topic.main.arn]
   tags = {
     Name = "${var.common.env}-alarm-ssh-failures-${each.key}"
+  }
+}
+
+# Define CloudWatch Alarm for SSH during non-business hours
+resource "aws_cloudwatch_metric_alarm" "ssh_non_business_hours" {
+  for_each            = { for i, s in aws_cloudwatch_log_metric_filter.ssh_non_business_hours : i => s }
+  alarm_name          = "${var.common.env}-alarm-ssh-non-business-hours-${each.key}"
+  namespace           = "CWAgent"
+  metric_name         = "SSH-during-non-business-hours-${each.key}"
+  statistic           = "Sum"
+  period              = 60
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = 1
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  treat_missing_data  = "notBreaching"
+  alarm_description   = "This metric monitors SSH logins during non-business hours."
+  alarm_actions       = [aws_sns_topic.main.arn]
+  tags = {
+    Name = "${var.common.env}-alarm-ssh-non-business-hours-${each.key}"
   }
 }
 

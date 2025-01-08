@@ -28,15 +28,10 @@ resource "aws_instance" "main" {
       Name = "${var.common.env}-ebs"
     }
   }
-  user_data            = <<-EOF
-              #!/bin/bash
-              cd /tmp
-              sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
-              sudo systemctl enable amazon-ssm-agent
-              sudo systemctl start amazon-ssm-agent
-              sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazoncloudwatch-agent-ap-northeast-1/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
-              sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${var.common.env}-cloudwatch-agent-${each.key} -s
-              EOF
+  user_data = templatefile("../../files/script.sh", {
+    env_name       = var.common.env,
+    instance_index = each.key
+  })
   iam_instance_profile = aws_iam_instance_profile.main.name
   depends_on           = [aws_ssm_parameter.cloudwatch_agent]
   tags = {
