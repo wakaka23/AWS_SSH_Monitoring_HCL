@@ -1,7 +1,3 @@
-## システム構成図
-<img width="1187" alt="image" src="https://github.com/user-attachments/assets/c7522729-6a4a-40ca-b60b-266f1f09b48c" />
-<br><br>
-
 ## ディレクトリ構成
 ```
 ├─ environments
